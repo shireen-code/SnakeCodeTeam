@@ -1,0 +1,210 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using static System.Console;
+
+namespace Snake
+{
+    class Program
+    {
+        const int WindowHeight = 16;
+        const int WindowWidth = 32;
+        const int InitialScore = 5;
+        const int MoveInterval = 500;
+
+        static Random rand = new Random();
+        static int score;
+        static Pixel head;
+        static Pixel berry;
+        static List<Pixel> body;
+        static Direction currentMovement;
+        static bool gameOver;
+
+        static void Main()
+        {
+            InitializeGame();
+
+            while (!gameOver)
+            {
+                UpdateGame();
+                DrawGame();
+
+                ProcessInput();
+
+                MoveSnake();
+            }
+
+            DisplayGameOver();
+        }
+
+        static void InitializeGame()
+        {
+            WindowHeight = 16;
+            WindowWidth = 32;
+
+            score = InitialScore;
+
+            head = new Pixel(WindowWidth / 2, WindowHeight / 2, ConsoleColor.Red);
+            berry = new Pixel(rand.Next(1, WindowWidth - 2), rand.Next(1, WindowHeight - 2), ConsoleColor.Cyan);
+
+            body = new List<Pixel>();
+
+            currentMovement = Direction.Right;
+            gameOver = false;
+        }
+
+        static void UpdateGame()
+        {
+            CheckCollisions();
+
+            if (head.XPos == berry.XPos && head.YPos == berry.YPos)
+            {
+                score++;
+                PlaceNewBerry();
+            }
+        }
+
+        static void DrawGame()
+        {
+            Clear();
+            DrawBorder();
+
+            foreach (var pixel in body)
+            {
+                DrawPixel(pixel);
+            }
+
+            DrawPixel(head);
+            DrawPixel(berry);
+        }
+
+        static void ProcessInput()
+        {
+            if (KeyAvailable)
+            {
+                var key = ReadKey(true).Key;
+
+                switch (key)
+                {
+                    case ConsoleKey.UpArrow when currentMovement != Direction.Down:
+                        currentMovement = Direction.Up;
+                        break;
+                    case ConsoleKey.DownArrow when currentMovement != Direction.Up:
+                        currentMovement = Direction.Down;
+                        break;
+                    case ConsoleKey.LeftArrow when currentMovement != Direction.Right:
+                        currentMovement = Direction.Left;
+                        break;
+                    case ConsoleKey.RightArrow when currentMovement != Direction.Left:
+                        currentMovement = Direction.Right;
+                        break;
+                }
+            }
+        }
+
+        static void MoveSnake()
+        {
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= MoveInterval)
+            {
+                // Waiting for MoveInterval milliseconds
+            }
+
+            body.Insert(0, new Pixel(head.XPos, head.YPos, ConsoleColor.Green));
+
+            switch (currentMovement)
+            {
+                case Direction.Up:
+                    head.YPos--;
+                    break;
+                case Direction.Down:
+                    head.YPos++;
+                    break;
+                case Direction.Left:
+                    head.XPos--;
+                    break;
+                case Direction.Right:
+                    head.XPos++;
+                    break;
+            }
+
+            if (body.Count > score)
+            {
+                body.RemoveAt(0);
+            }
+        }
+
+        static void CheckCollisions()
+        {
+            gameOver |= (head.XPos == WindowWidth - 1 || head.XPos == 0 || head.YPos == WindowHeight - 1 || head.YPos == 0);
+
+            foreach (var segment in body)
+            {
+                gameOver |= (segment.XPos == head.XPos && segment.YPos == head.YPos);
+            }
+        }
+
+        static void PlaceNewBerry()
+        {
+            berry = new Pixel(rand.Next(1, WindowWidth - 2), rand.Next(1, WindowHeight - 2), ConsoleColor.Cyan);
+        }
+
+        static void DrawPixel(Pixel pixel)
+        {
+            SetCursorPosition(pixel.XPos, pixel.YPos);
+            ForegroundColor = pixel.ScreenColor;
+            Write("■");
+            SetCursorPosition(0, 0);
+        }
+
+        static void DrawBorder()
+        {
+            for (int i = 0; i < WindowWidth; i++)
+            {
+                SetCursorPosition(i, 0);
+                Write("■");
+
+                SetCursorPosition(i, WindowHeight - 1);
+                Write("■");
+            }
+
+            for (int i = 0; i < WindowHeight; i++)
+            {
+                SetCursorPosition(0, i);
+                Write("■");
+
+                SetCursorPosition(WindowWidth - 1, i);
+                Write("■");
+            }
+        }
+
+        static void DisplayGameOver()
+        {
+            SetCursorPosition(WindowWidth / 5, WindowHeight / 2);
+            WriteLine($"Game over, Score: {score - InitialScore}");
+            SetCursorPosition(WindowWidth / 5, WindowHeight / 2 + 1);
+            ReadKey();
+        }
+
+        struct Pixel
+        {
+            public Pixel(int xPos, int yPos, ConsoleColor color)
+            {
+                XPos = xPos;
+                YPos = yPos;
+                ScreenColor = color;
+            }
+            public int XPos { get; set; }
+            public int YPos { get; set; }
+            public ConsoleColor ScreenColor { get; set; }
+        }
+
+        enum Direction
+        {
+            Up,
+            Down,
+            Right,
+            Left
+        }
+    }
+}
